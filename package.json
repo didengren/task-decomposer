@@ -1,0 +1,53 @@
+{
+  "name": "@bicorne/task-decomposer",
+  "version": "1.0.0",
+  "description": "AI skill package for task decomposition and workflow orchestration, distributed via npm with the task CLI.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/didengren/task-decomposer.git"
+  },
+  "homepage": "https://github.com/didengren/task-decomposer#readme",
+  "bugs": {
+    "url": "https://github.com/didengren/task-decomposer/issues"
+  },
+  "bin": {
+    "task": "bin/task"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "scripts",
+    "references",
+    "SKILL.md",
+    "README.md",
+    "INSTALL.md",
+    "skill.yaml"
+  ],
+  "scripts": {
+    "verify": "sh scripts/verify.sh",
+    "pack:skill": "sh scripts/package.sh tar",
+    "pack:npm": "npm pack",
+    "release:check": "npm run verify && npm pack --dry-run",
+    "prepublishOnly": "npm run release:check"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "preferGlobal": true,
+  "keywords": [
+    "skill",
+    "ai-skill",
+    "task-decomposition",
+    "workflow",
+    "task",
+    "cli",
+    "claude-code",
+    "trae"
+  ],
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ]
+}

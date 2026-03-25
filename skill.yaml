@@ -1,0 +1,84 @@
+# Task Decomposer Skill Configuration
+# This file defines default paths and settings for the skill.
+# Can be overridden by project-level .skill.yaml file.
+
+# Project discovery settings
+version: 1.0.0
+
+project:
+  # Markers to identify project root directory
+  markers:
+    - pyproject.toml
+    - package.json
+    - Cargo.toml
+    - go.mod
+    - .git
+    - docs/tasks
+
+# Path configuration (relative to project root)
+paths:
+  # Task files directory
+  tasks_dir: docs/tasks
+  
+  # Plan documents directory
+  plans_dir: docs/plans
+  
+  # Task template file
+  task_template: docs/tasks/_template.yaml.example
+  
+  # State storage (relative to skill directory)
+  state_dir: state
+
+# Document paths (relative to project root)
+documents:
+  # Technical specification
+  spec: docs/plans/spec.md
+  
+  # Task breakdown
+  tasks: docs/plans/tasks.md
+  
+  # Required reading for each task (can be overridden in task file)
+  default_docs_to_read:
+    - docs/plans/spec.md
+    - docs/plans/tasks.md
+
+# Task ID format
+task_id:
+  pattern: "^PHASE-[0-9]+-[0-9]+-[0-9]+$"
+  example: "PHASE-1-2-3"
+  description: "PHASE-{phase}-{subphase}-{sequence}"
+
+# Status values
+status:
+  valid_values:
+    - pending
+    - in_progress
+    - completed
+    - blocked
+  
+  default: pending
+
+# Validation settings
+validation:
+  # Required fields in task YAML
+  required_fields:
+    - id
+    - type
+    - title
+    - priority
+    - phase
+    - status
+  
+  # Valid task types
+  valid_types:
+    - feat
+    - fix
+    - refactor
+    - test
+    - docs
+  
+  # Valid priorities
+  valid_priorities:
+    - high
+    - medium
+    - low

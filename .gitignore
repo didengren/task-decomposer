@@ -1,0 +1,5 @@
+state/
+node_modules/
+*.skill.tar.gz
+*.skill.zip
+*.tgz
