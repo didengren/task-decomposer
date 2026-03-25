@@ -13,6 +13,7 @@ project:
     - Cargo.toml
     - go.mod
     - .git
+    - .skill.yaml
     - docs/tasks
 
 # Path configuration (relative to project root)

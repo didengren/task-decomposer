@@ -5,8 +5,17 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SKILL_DIR="$(dirname "$SCRIPT_DIR")"
 
-TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/task-decomposer-verify.XXXXXX")"
+TMP_BASE_DIR="${TMPDIR:-/tmp}"
+TMP_BASE_DIR="${TMP_BASE_DIR%/}"
+TMP_DIR="$(mktemp -d "${TMP_BASE_DIR}/task-decomposer-verify.XXXXXX")"
 trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
+
+run_npm_without_dry_run() {
+    (
+        unset npm_config_dry_run
+        npm "$@"
+    )
+}
 
 create_custom_project() {
     project_root="$1"
@@ -62,7 +71,7 @@ dependencies:
 validation:
   commands:
     - python3 -c "import sys; sys.exit(1)"
-status: in_progress
+status: pending
 EOF
 }
 
@@ -126,6 +135,8 @@ run_custom_project_checks() {
 
     READY_AFTER=$(HOME="${test_home}" "${task_bin}" ready)
     printf '%s\n' "$READY_AFTER" | grep "PHASE-1-1-2" >/dev/null
+
+    HOME="${test_home}" "${task_bin}" start PHASE-1-1-2 >/dev/null
 
     if HOME="${test_home}" "${skill_root}/scripts/workflow.sh" complete PHASE-1-1-2 >/dev/null 2>&1; then
         echo "workflow complete should fail when validation fails"
@@ -240,8 +251,8 @@ run_npm_install_checks() {
     mkdir -p "${pack_dir}" "${prefix_dir}" "${test_home}"
     create_custom_project "${custom_project}"
 
-    PACKAGE_FILE=$(cd "${SKILL_DIR}" && npm pack --pack-destination "${pack_dir}" | tail -1)
-    npm install -g "${pack_dir}/${PACKAGE_FILE}" --prefix "${prefix_dir}" >/dev/null
+    PACKAGE_FILE=$(cd "${SKILL_DIR}" && run_npm_without_dry_run pack --pack-destination "${pack_dir}" | tail -1)
+    run_npm_without_dry_run install -g "${pack_dir}/${PACKAGE_FILE}" --prefix "${prefix_dir}" >/dev/null
 
     task_bin="${prefix_dir}/bin/task"
     installed_skill_dir="${prefix_dir}/lib/node_modules/@bicorne/task-decomposer"
