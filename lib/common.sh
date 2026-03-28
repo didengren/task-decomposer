@@ -132,17 +132,17 @@ parse_yaml_value() {
 parse_yaml_nested() {
     file="$1"
     path="$2"
-    default="${3:-}"
+    fallback="${3:-}"
     
     if [ ! -f "$file" ]; then
-        echo "$default"
+        echo "$fallback"
         return
     fi
     
     parent=$(echo "$path" | cut -d. -f1)
     child=$(echo "$path" | cut -d. -f2-)
     
-    awk -v parent="$parent" -v child="$child" -v default="$default" '
+    awk -v parent="$parent" -v child="$child" -v fallback="$fallback" '
         function trim_value(value) {
             gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
             sub(/^"/, "", value)
@@ -158,7 +158,7 @@ parse_yaml_nested() {
             exit
         }
         in_section && $0 ~ "^[^[:space:]][^:]*:[[:space:]]*$" { in_section=0 }
-        END { if (!found) print default }
+        END { if (!found) print fallback }
     ' "$file"
 }
 
