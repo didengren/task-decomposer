@@ -109,7 +109,7 @@ your-project/
 │   │   ├── spec.md
 │   │   └── tasks.md
 │   └── tasks/
-│       ├── PHASE-1-1-1.yaml
+│       ├── PHASE-1-1-1.json
 │       └── ...
 └── .skill.yaml           # 可选
 ```
@@ -117,7 +117,7 @@ your-project/
 最少需要：
 - `docs/plans/spec.md`
 - `docs/plans/tasks.md`
-- `docs/tasks/PHASE-*.yaml`
+- `docs/tasks/PHASE-*.json`
 
 如果目录还不存在：
 
@@ -159,7 +159,7 @@ cd /path/to/your-project
 task init
 ```
 
-这一步会初始化任务状态存储，并按任务 YAML 中定义的状态建立本地状态。
+这一步会初始化任务状态存储，并按任务 JSON 中定义的状态建立本地状态。
 
 ### 推荐工作流
 
@@ -230,7 +230,7 @@ task start --force PHASE-1-1-1
 task validate
 ```
 
-用于检查所有任务 YAML 的字段、状态、优先级和类型是否合法。
+用于检查所有任务 JSON 的字段、状态、优先级和类型是否合法。
 
 ---
 
@@ -346,5 +346,5 @@ npm run verify
 - [SKILL.md](./SKILL.md) - Skill 行为说明与任务格式
 - [references/config.md](./references/config.md) - 完整配置参考
 - [references/example-project](./references/example-project) - 最小示例项目
-- 项目任务文件: `docs/tasks/*.yaml`
+- 项目任务文件: `docs/tasks/*.json`
 - 项目规划文档: `docs/plans/spec.md`, `docs/plans/tasks.md`

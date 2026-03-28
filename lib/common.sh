@@ -32,7 +32,83 @@ detect_os() {
     esac
 }
 
-# Parse YAML value (simple key:value extraction)
+# ============================================================================
+# JSON Parser (using Python - zero dependency, available on all systems)
+# ============================================================================
+
+json_get() {
+    file="$1"
+    key="$2"
+    default="${3:-}"
+    
+    if [ ! -f "$file" ]; then
+        echo "$default"
+        return
+    fi
+    
+    python3 -c "
+import json
+import sys
+try:
+    with open('$file', 'r') as f:
+        data = json.load(f)
+    keys = '$key'.split('.')
+    result = data
+    for k in keys:
+        if isinstance(result, dict) and k in result:
+            result = result[k]
+        else:
+            result = None
+            break
+    if result is not None and result != '':
+        if isinstance(result, list):
+            for item in result:
+                print(item)
+        elif isinstance(result, bool):
+            print('true' if result else 'false')
+        else:
+            print(result)
+    else:
+        print('$default')
+except Exception as e:
+    print('$default', file=sys.stderr)
+    sys.exit(0)
+" 2>/dev/null || echo "$default"
+}
+
+json_get_array() {
+    file="$1"
+    key="$2"
+    
+    if [ ! -f "$file" ]; then
+        return 1
+    fi
+    
+    python3 -c "
+import json
+import sys
+try:
+    with open('$file', 'r') as f:
+        data = json.load(f)
+    keys = '$key'.split('.')
+    result = data
+    for k in keys:
+        if isinstance(result, dict) and k in result:
+            result = result[k]
+        else:
+            result = []
+            break
+    if isinstance(result, list):
+        for item in result:
+            print(item)
+except Exception as e:
+    sys.exit(1)
+" 2>/dev/null
+}
+
+# ============================================================================
+# YAML Parser (legacy support)
+# ============================================================================
 parse_yaml_value() {
     file="$1"
     key="$2"
@@ -251,7 +327,7 @@ get_plans_dir() {
 
 get_task_template() {
     root="$(get_project_root)"
-    template=$(get_config "paths.task_template" "docs/tasks/_template.yaml.example")
+    template=$(get_config "paths.task_template" "docs/tasks/_template.json.example")
     echo "${root}/${template}"
 }
 
@@ -320,7 +396,15 @@ ensure_state_dir() {
 get_task_file() {
     task_id="$1"
     tasks_dir="$(get_tasks_dir)"
-    echo "${tasks_dir}/${task_id}.yaml"
+    
+    # Try JSON first, then YAML for backward compatibility
+    if [ -f "${tasks_dir}/${task_id}.json" ]; then
+        echo "${tasks_dir}/${task_id}.json"
+    elif [ -f "${tasks_dir}/${task_id}.yaml" ]; then
+        echo "${tasks_dir}/${task_id}.yaml"
+    else
+        echo "${tasks_dir}/${task_id}.json"
+    fi
 }
 
 task_exists() {
@@ -353,12 +437,19 @@ get_task_status() {
     else
         task_file="$(get_task_file "$task_id")"
         if [ -f "$task_file" ]; then
-            yaml_status=$(grep "^status:" "$task_file" 2>/dev/null | sed 's/^status: *//' || echo "")
-            if [ -n "$yaml_status" ]; then
-                echo "$yaml_status"
-            else
-                echo "pending"
-            fi
+            case "$task_file" in
+                *.json)
+                    json_get "$task_file" "status" "pending"
+                    ;;
+                *.yaml)
+                    yaml_status=$(grep "^status:" "$task_file" 2>/dev/null | sed 's/^status: *//' || echo "")
+                    if [ -n "$yaml_status" ]; then
+                        echo "$yaml_status"
+                    else
+                        echo "pending"
+                    fi
+                    ;;
+            esac
         else
             echo "unknown"
         fi
@@ -379,14 +470,28 @@ set_task_status() {
     
     task_file="$(get_task_file "$task_id")"
     if [ -f "$task_file" ]; then
-        if grep -q "^status:" "$task_file"; then
-            case "$(detect_os)" in
-                macos) sed -i '' "s/^status:.*/status: ${status}/" "$task_file" ;;
-                *)     sed -i "s/^status:.*/status: ${status}/" "$task_file" ;;
-            esac
-        else
-            echo "status: ${status}" >> "$task_file"
-        fi
+        case "$task_file" in
+            *.json)
+                python3 -c "
+import json
+with open('$task_file', 'r') as f:
+    data = json.load(f)
+data['status'] = '$status'
+with open('$task_file', 'w') as f:
+    json.dump(data, f, indent=2, ensure_ascii=False)
+                    "
+                ;;
+            *.yaml)
+                if grep -q "^status:" "$task_file"; then
+                    case "$(detect_os)" in
+                        macos) sed -i '' "s/^status:.*/status: ${status}/" "$task_file" ;;
+                        *)     sed -i "s/^status:.*/status: ${status}/" "$task_file" ;;
+                    esac
+                else
+                    echo "status: ${status}" >> "$task_file"
+                fi
+                ;;
+        esac
     fi
 }
 
@@ -396,21 +501,23 @@ set_task_status() {
 
 list_all_tasks() {
     tasks_dir="$(get_tasks_dir)"
-    for f in "$tasks_dir"/PHASE-*.yaml; do
+    # List both JSON and YAML files
+    for f in "$tasks_dir"/PHASE-*.json "$tasks_dir"/PHASE-*.yaml; do
         if [ -f "$f" ]; then
-            basename "$f" .yaml
+            basename "$f" | sed 's/\.json$//' | sed 's/\.yaml$//'
         fi
-    done | sort
+    done | sort -u
 }
 
 list_tasks_by_phase() {
     phase="$1"
     tasks_dir="$(get_tasks_dir)"
-    for f in "$tasks_dir"/PHASE-${phase}-*.yaml; do
+    # List both JSON and YAML files
+    for f in "$tasks_dir"/PHASE-${phase}-*.json "$tasks_dir"/PHASE-${phase}-*.yaml; do
         if [ -f "$f" ]; then
-            basename "$f" .yaml
+            basename "$f" | sed 's/\.json$//' | sed 's/\.yaml$//'
         fi
-    done | sort
+    done | sort -u
 }
 
 # ============================================================================

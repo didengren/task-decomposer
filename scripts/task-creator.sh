@@ -1,5 +1,5 @@
 #!/bin/sh
-# Task Creator - Create task YAML files from plan documents
+# Task Creator - Create task JSON files from plan documents
 # Self-contained, uses skill's own lib
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -23,40 +23,6 @@ value_in_list() {
 $list
 EOF
     return 1
-}
-
-indent_lines() {
-    prefix="$1"
-    input="$2"
-    
-    if [ -z "$input" ]; then
-        return
-    fi
-    
-    while IFS= read -r line; do
-        if [ -n "$line" ]; then
-            printf "%s%s\n" "$prefix" "$line"
-        fi
-    done <<EOF
-$input
-EOF
-}
-
-format_yaml_list() {
-    prefix="$1"
-    input="$2"
-    
-    if [ -z "$input" ]; then
-        return
-    fi
-    
-    while IFS= read -r line; do
-        if [ -n "$line" ]; then
-            printf "%s- %s\n" "$prefix" "$line"
-        fi
-    done <<EOF
-$input
-EOF
 }
 
 normalize_dependencies() {
@@ -109,7 +75,7 @@ low")
     spec_file="$(get_spec_file)"
     spec_context="${spec_file#$(get_project_root)/}"
     
-    task_file="${TASKS_DIR}/${task_id}.yaml"
+    task_file="${TASKS_DIR}/${task_id}.json"
     
     if ! validate_task_id "$task_id"; then
         error "Invalid task ID: $task_id"
@@ -144,39 +110,73 @@ low")
         return 1
     fi
     
+    # Convert dependencies to JSON array
+    deps_json="[]"
+    if [ -n "$dependencies" ] && [ "$dependencies" != "[]" ]; then
+        deps_json=$(echo "$dependencies" | sed 's/^\[//' | sed 's/\]$//' | tr ',' '\n' | sed 's/^ *//' | sed 's/ *$//' | awk 'NF { printf "\"%s\", ", $0 }' | sed 's/, $//')
+        deps_json="[$deps_json]"
+    fi
+    
+    # Convert files to JSON array
+    files_json="[]"
+    if [ -n "$files" ]; then
+        files_json=$(echo "$files" | tr ',' '\n' | sed 's/^ *//' | sed 's/ *$//' | awk 'NF { printf "\"%s\", ", $0 }' | sed 's/, $//')
+        files_json="[$files_json]"
+    fi
+    
+    # Convert acceptance criteria to JSON array
+    criteria_json="[]"
+    if [ -n "$acceptance_criteria" ]; then
+        criteria_json=$(echo "$acceptance_criteria" | tr '|' '\n' | awk 'NF { gsub(/^[[:space:]]+|[[:space:]]+$/, ""); printf "\"%s\", ", $0 }' | sed 's/, $//')
+        criteria_json="[$criteria_json]"
+    fi
+    
+    # Convert implementation steps to JSON array of objects
+    steps_json="[]"
+    if [ -n "$implementation_steps" ]; then
+        steps_json=$(echo "$implementation_steps" | tr '|' '\n' | awk 'NF { gsub(/^[[:space:]]+|[[:space:]]+$/, ""); printf "{\"step\": \"%s\"}, ", $0 }' | sed 's/, $//')
+        steps_json="[$steps_json]"
+    fi
+    
+    # Convert validation commands to JSON array
+    cmds_json="[]"
+    if [ -n "$validation_commands" ]; then
+        cmds_json=$(echo "$validation_commands" | tr '|' '\n' | awk 'NF { gsub(/^[[:space:]]+|[[:space:]]+$/, ""); gsub(/"/, "\\\""); printf "\"%s\", ", $0 }' | sed 's/, $//')
+        cmds_json="[$cmds_json]"
+    fi
+    
+    # Convert docs_to_read to JSON array
+    docs_json="[]"
+    if [ -n "$default_docs" ]; then
+        docs_json=$(printf "%s\n" "$default_docs" | awk 'NF { printf "\"%s\", ", $0 }' | sed 's/, $//')
+        docs_json="[$docs_json]"
+    fi
+    
     cat > "$task_file" << EOF
-id: ${task_id}
-type: ${type}
-title: ${title}
-priority: ${priority}
-phase: ${phase}
-dependencies:
-$(format_yaml_list "  " "$(normalize_dependencies "$dependencies")")
-docs_to_read:
-$(format_yaml_list "  " "$default_docs")
-
-spec:
-  description: |
-$(indent_lines "    " "$description")
-  files:
-$(format_yaml_list "    " "$files")
-  context:
-    - ${spec_context}
-
-acceptance_criteria:
-$(format_yaml_list "  " "$acceptance_criteria")
-
-implementation:
-  steps:
-$(indent_lines "    - step: " "$implementation_steps")
-  notes: ""
-
-validation:
-  commands:
-$(format_yaml_list "    " "$validation_commands")
-  manual_checks: []
-
-status: pending
+{
+  "id": "${task_id}",
+  "type": "${type}",
+  "title": "${title}",
+  "priority": "${priority}",
+  "phase": ${phase},
+  "dependencies": ${deps_json},
+  "docs_to_read": ${docs_json},
+  "spec": {
+    "description": "${description}",
+    "files": ${files_json},
+    "context": ["${spec_context}"]
+  },
+  "acceptance_criteria": ${criteria_json},
+  "implementation": {
+    "steps": ${steps_json},
+    "notes": ""
+  },
+  "validation": {
+    "commands": ${cmds_json},
+    "manual_checks": []
+  },
+  "status": "pending"
+}
 EOF
     
     success "Created: $task_file"

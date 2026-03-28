@@ -49,11 +49,15 @@ package_tar() {
     cd "$(dirname "$SKILL_DIR")"
     
     tar -czvf "$output_file" \
-        --exclude="${SKILL_NAME}/state/*" \
+        --exclude="${SKILL_NAME}/state" \
         --exclude="${SKILL_NAME}/.git" \
+        --exclude="${SKILL_NAME}/.github" \
+        --exclude="${SKILL_NAME}/.qoder" \
         --exclude="${SKILL_NAME}/*.log" \
         --exclude="${SKILL_NAME}/__pycache__" \
         --exclude="${SKILL_NAME}/.DS_Store" \
+        --exclude="${SKILL_NAME}/.gitignore" \
+        --exclude="${SKILL_NAME}/*.tgz" \
         "$(basename "$SKILL_DIR")"
     
     echo ""
@@ -75,9 +79,13 @@ package_zip() {
     zip -r "$output_file" "$(basename "$SKILL_DIR")" \
         -x "${SKILL_NAME}/state/*" \
         -x "${SKILL_NAME}/.git/*" \
+        -x "${SKILL_NAME}/.github/*" \
+        -x "${SKILL_NAME}/.qoder/*" \
         -x "${SKILL_NAME}/*.log" \
         -x "${SKILL_NAME}/__pycache__/*" \
-        -x "${SKILL_NAME}/.DS_Store"
+        -x "${SKILL_NAME}/.DS_Store" \
+        -x "${SKILL_NAME}/.gitignore" \
+        -x "${SKILL_NAME}/*.tgz"
     
     echo ""
     echo "✓ Package created: ${output_file}"

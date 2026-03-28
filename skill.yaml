@@ -24,8 +24,8 @@ paths:
   # Plan documents directory
   plans_dir: docs/plans
   
-  # Task template file
-  task_template: docs/tasks/_template.yaml.example
+  # Task template file (supports both JSON and YAML)
+  task_template: docs/tasks/_template.json.example
   
   # State storage (relative to skill directory)
   state_dir: state
@@ -61,7 +61,7 @@ status:
 
 # Validation settings
 validation:
-  # Required fields in task YAML
+  # Required fields in task JSON/YAML
   required_fields:
     - id
     - type

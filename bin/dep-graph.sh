@@ -16,11 +16,18 @@ get_deps() {
         return
     fi
     
-    awk '
-        /^dependencies:/ { in_deps=1; next }
-        /^[a-z_]+:$/ { in_deps=0 }
-        in_deps && /^  - / { print substr($0, 5) }
-    ' "$task_file"
+    case "$task_file" in
+        *.json)
+            json_get "$task_file" "dependencies" ""
+            ;;
+        *.yaml)
+            awk '
+                /^dependencies:/ { in_deps=1; next }
+                /^[a-z_]+:$/ { in_deps=0 }
+                in_deps && /^  - / { print substr($0, 5) }
+            ' "$task_file"
+            ;;
+    esac
 }
 
 check_deps_completed() {

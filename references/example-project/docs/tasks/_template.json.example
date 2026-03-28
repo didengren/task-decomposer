@@ -1,0 +1,43 @@
+{
+  "id": "PHASE-{phase}-{subphase}-{seq}",
+  "type": "feat|fix|refactor|test|docs",
+  "title": "Task title (concise and clear)",
+  "priority": "high|medium|low",
+  "phase": 1,
+  "dependencies": [],
+  "docs_to_read": [
+    "docs/plans/spec.md",
+    "docs/plans/tasks.md"
+  ],
+  "spec": {
+    "description": "Detailed task description with objectives and completion criteria.",
+    "files": [
+      "src/path/to/file.py"
+    ],
+    "context": [
+      "docs/plans/spec.md#section-number"
+    ]
+  },
+  "acceptance_criteria": [
+    "Acceptance criterion 1",
+    "Acceptance criterion 2"
+  ],
+  "implementation": {
+    "steps": [
+      {
+        "step": "Step 1 description",
+        "details": "Detailed explanation of this step"
+      }
+    ],
+    "notes": ""
+  },
+  "validation": {
+    "commands": [
+      "pytest tests/"
+    ],
+    "manual_checks": [
+      "Manual check item 1"
+    ]
+  },
+  "status": "pending"
+}

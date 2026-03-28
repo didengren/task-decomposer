@@ -25,7 +25,9 @@
   ],
   "scripts": {
     "verify": "sh scripts/verify.sh",
-    "pack:skill": "sh scripts/package.sh tar",
+    "pack:skill": "sh scripts/package.sh all",
+    "pack:zip": "sh scripts/package.sh zip",
+    "pack:tar": "sh scripts/package.sh tar",
     "pack:npm": "npm pack",
     "release:check": "npm run verify && npm pack --dry-run",
     "prepublishOnly": "npm run release:check"

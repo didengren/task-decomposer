@@ -52,7 +52,7 @@ paths:
   plans_dir: docs/plans
   
   # 任务模板文件
-  task_template: docs/tasks/_template.yaml.example
+  task_template: docs/tasks/_template.json.example
   
   # 状态存储目录（相对于 skill 目录）
   state_dir: state
@@ -191,7 +191,7 @@ project:
 
 ### paths.tasks_dir
 
-任务 YAML 文件存放目录。
+任务 JSON/YAML 文件存放目录。
 
 - **类型**: 字符串
 - **默认值**: `docs/tasks`
@@ -210,7 +210,7 @@ project:
 任务模板文件路径，用于创建新任务时的模板。
 
 - **类型**: 字符串
-- **默认值**: `docs/tasks/_template.yaml.example`
+- **默认值**: `docs/tasks/_template.json.example`
 - **说明**: `scripts/task-creator.sh template` 会读取该路径
 
 ### paths.state_dir
@@ -266,7 +266,7 @@ Skill Dir:    /path/to/skill
 Paths:
   Tasks Dir:    /path/to/project/docs/tasks
   Plans Dir:    /path/to/project/docs/plans
-  Task Template: /path/to/project/docs/tasks/_template.yaml.example
+  Task Template: /path/to/project/docs/tasks/_template.json.example
   State Dir:    /path/to/skill/state
   Project State: /path/to/skill/state/project-123456789
 

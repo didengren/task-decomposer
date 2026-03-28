@@ -214,12 +214,31 @@ blocked")
             errors=$((errors + 1))
         fi
         
-        for field in $required_fields; do
-            if ! grep -q "^${field}:" "$task_file"; then
-                error "$task_id: missing field '$field'"
-                errors=$((errors + 1))
-            fi
-        done
+        # Check required fields based on file type
+        case "$task_file" in
+            *.json)
+                for field in $required_fields; do
+                    value=$(python3 -c "
+import json
+with open('$task_file', 'r') as f:
+    data = json.load(f)
+print('present' if '$field' in data else 'missing')
+                    " 2>/dev/null || echo "missing")
+                    if [ "$value" = "missing" ]; then
+                        error "$task_id: missing field '$field'"
+                        errors=$((errors + 1))
+                    fi
+                done
+                ;;
+            *.yaml)
+                for field in $required_fields; do
+                    if ! grep -q "^${field}:" "$task_file"; then
+                        error "$task_id: missing field '$field'"
+                        errors=$((errors + 1))
+                    fi
+                done
+                ;;
+        esac
         
         file_id=$(task-parser.sh field "$task_id" "id" 2>/dev/null || echo "")
         task_type=$(task-parser.sh field "$task_id" "type" 2>/dev/null || echo "")
@@ -319,15 +338,76 @@ EOF
 cmd_init() {
     ensure_state_dir
     
+    tasks_dir="$(get_tasks_dir)"
+    plans_dir="$(get_plans_dir)"
+    spec_file="${plans_dir}/spec.md"
+    tasks_file="${plans_dir}/tasks.md"
+    
+    # Check if tasks need to be generated (support both .json and .yaml)
+    json_count=$(ls "${tasks_dir}"/PHASE-*.json 2>/dev/null | wc -l | tr -d ' ')
+    yaml_count=$(ls "${tasks_dir}"/PHASE-*.yaml 2>/dev/null | wc -l | tr -d ' ')
+    task_count=$((json_count + yaml_count))
+    
+    if [ "$task_count" -eq 0 ]; then
+        echo ""
+        echo "╔═══════════════════════════════════════════════════════════════╗"
+        echo "║              Task Decomposition Required                       ║"
+        echo "╚═══════════════════════════════════════════════════════════════╝"
+        echo ""
+        echo "No task files found in ${tasks_dir}"
+        echo ""
+        
+        # Check if plan documents exist
+        if [ -f "$spec_file" ] || [ -f "$tasks_file" ]; then
+            echo "Plan documents detected:"
+            [ -f "$spec_file" ] && echo "  ✓ ${spec_file}"
+            [ -f "$tasks_file" ] && echo "  ✓ ${tasks_file}"
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
+            echo "AI: Please read the plan documents and generate task files:"
+            echo ""
+            echo "  1. READ:  Read docs/plans/spec.md and docs/plans/tasks.md"
+            echo "  2. PARSE: Understand the structure (Phase -&gt; Subphase -&gt; Task)"
+            echo "  3. GENERATE: Create PHASE-X-Y-Z.json files in docs/tasks/"
+            echo "  4. VALIDATE: Run 'task validate' to verify"
+            echo ""
+            echo "Task JSON template:"
+            echo "  id: PHASE-X-Y-Z"
+            echo "  type: feat|fix|refactor|test|docs"
+            echo "  title: Task title"
+            echo "  priority: high|medium|low"
+            echo "  phase: X"
+            echo "  dependencies: []"
+            echo "  docs_to_read: [docs/plans/spec.md, docs/plans/tasks.md]"
+            echo "  spec: {description, files, context}"
+            echo "  acceptance_criteria: []"
+            echo "  implementation: {steps, notes}"
+            echo "  validation: {commands, manual_checks}"
+            echo "  status: pending"
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        else
+            echo "No plan documents found. Please create:"
+            echo "  - ${spec_file}"
+            echo "  - ${tasks_file}"
+            echo ""
+            echo "See references/example-project/ for examples."
+        fi
+        echo ""
+        return 0
+    fi
+    
+    # Sync existing task status
     info "Syncing task status..."
     
     for task_id in $(list_all_tasks); do
         task_file="$(get_task_file "$task_id")"
-        yaml_status=$(grep "^status:" "$task_file" 2>/dev/null | sed 's/^status: *//' || echo "pending")
+        file_status=$(grep "^status:" "$task_file" 2>/dev/null | sed 's/^status: *//' || echo "pending")
         
-        if [ -n "$yaml_status" ]; then
+        if [ -n "$file_status" ]; then
             status_file="$(get_task_status_file "$task_id")"
-            echo "$yaml_status" > "$status_file"
+            echo "$file_status" > "$status_file"
         fi
     done
     

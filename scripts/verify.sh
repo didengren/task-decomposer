@@ -25,7 +25,7 @@ create_custom_project() {
 paths:
   tasks_dir: .tasks
   plans_dir: .plans
-  task_template: .templates/task.yaml.example
+  task_template: .templates/task.json.example
 
 documents:
   spec: .plans/spec.md
@@ -43,7 +43,7 @@ EOF
 # custom tasks
 EOF
 
-    cat > "${project_root}/.templates/task.yaml.example" <<'EOF'
+    cat > "${project_root}/.templates/task.json.example" <<'EOF'
 id: PHASE-X-Y-Z
 EOF
 
@@ -86,7 +86,7 @@ run_custom_project_checks() {
     printf '%s\n' "$CONFIG_OUTPUT" | grep "Project Root: ${project_root}" >/dev/null
     printf '%s\n' "$CONFIG_OUTPUT" | grep "Tasks Dir:    ${project_root}/.tasks" >/dev/null
     printf '%s\n' "$CONFIG_OUTPUT" | grep "Project State: .*${label}-custom-project" >/dev/null
-    printf '%s\n' "$CONFIG_OUTPUT" | grep "Task Template: ${project_root}/.templates/task.yaml.example" >/dev/null
+    printf '%s\n' "$CONFIG_OUTPUT" | grep "Task Template: ${project_root}/.templates/task.json.example" >/dev/null
 
     cd "${project_root}"
     HOME="${test_home}" "${task_bin}" init >/dev/null
@@ -114,15 +114,15 @@ run_custom_project_checks() {
         1 \
         "[]" \
         "Task creator generated description" \
-        ".tasks/PHASE-1-1-3.yaml" \
+        ".tasks/PHASE-1-1-3.json" \
         "Generated acceptance criteria" \
         "Run generated implementation step" \
         "python3 -c \"print('generated validation')\"" >/dev/null
-    grep "^docs_to_read:" "${project_root}/.tasks/PHASE-1-1-3.yaml" >/dev/null
-    grep "  - .plans/spec.md" "${project_root}/.tasks/PHASE-1-1-3.yaml" >/dev/null
-    grep "  - .plans/tasks.md" "${project_root}/.tasks/PHASE-1-1-3.yaml" >/dev/null
-    grep "    - .tasks/PHASE-1-1-3.yaml" "${project_root}/.tasks/PHASE-1-1-3.yaml" >/dev/null
-    grep "    - .plans/spec.md" "${project_root}/.tasks/PHASE-1-1-3.yaml" >/dev/null
+    grep '"docs_to_read":' "${project_root}/.tasks/PHASE-1-1-3.json" >/dev/null
+    grep '".plans/spec.md"' "${project_root}/.tasks/PHASE-1-1-3.json" >/dev/null
+    grep '".plans/tasks.md"' "${project_root}/.tasks/PHASE-1-1-3.json" >/dev/null
+    grep '".tasks/PHASE-1-1-3.json"' "${project_root}/.tasks/PHASE-1-1-3.json" >/dev/null
+    grep '".plans/spec.md"' "${project_root}/.tasks/PHASE-1-1-3.json" >/dev/null
 
     WORKFLOW_OUTPUT=$(HOME="${test_home}" "${skill_root}/scripts/workflow.sh" start PHASE-1-1-1 2>&1)
     printf '%s\n' "$WORKFLOW_OUTPUT" | grep "Title:    Multi word validation command" >/dev/null

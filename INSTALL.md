@@ -276,7 +276,7 @@ task-decomposer/
 │   └── common.sh         # 公共函数库
 ├── bin/
 │   ├── harness.sh        # 任务管理 CLI
-│   ├── task-parser.sh    # YAML 解析器
+│   ├── task-parser.sh    # JSON/YAML 解析器
 │   └── dep-graph.sh      # 依赖图分析
 ├── scripts/
 │   ├── workflow.sh       # 工作流脚本

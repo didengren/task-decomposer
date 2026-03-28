@@ -1,5 +1,5 @@
 #!/bin/sh
-# Task Parser - Parse YAML task files
+# Task Parser - Parse JSON/YAML task files
 # Self-contained, no external dependencies
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -18,7 +18,14 @@ parse_field() {
         return 1
     fi
     
-    grep "^${field}:" "$task_file" | head -1 | sed "s/^${field}: *//" | sed 's/^"//' | sed 's/"$//'
+    case "$task_file" in
+        *.json)
+            json_get "$task_file" "$field"
+            ;;
+        *.yaml)
+            grep "^${field}:" "$task_file" | head -1 | sed "s/^${field}: *//" | sed 's/^"//' | sed 's/"$//'
+            ;;
+    esac
 }
 
 parse_array() {
@@ -30,17 +37,24 @@ parse_array() {
         return 1
     fi
     
-    inline=$(grep "^${field}:" "$task_file" | head -1 | sed "s/^${field}: *//")
-    
-    if echo "$inline" | grep -q '^\['; then
-        echo "$inline" | sed 's/^\[//' | sed 's/\]$//' | tr ',' '\n' | sed 's/^ *//' | sed 's/ *$//' | awk 'NF { print }'
-    else
-        awk "
-            /^${field}:/ { in_array=1; next }
-            /^[a-z_]+:\$/ { in_array=0 }
-            in_array && /^  - / { print substr(\$0, 5) }
-        " "$task_file"
-    fi
+    case "$task_file" in
+        *.json)
+            json_get_array "$task_file" "$field"
+            ;;
+        *.yaml)
+            inline=$(grep "^${field}:" "$task_file" | head -1 | sed "s/^${field}: *//")
+            
+            if echo "$inline" | grep -q '^\['; then
+                echo "$inline" | sed 's/^\[//' | sed 's/\]$//' | tr ',' '\n' | sed 's/^ *//' | sed 's/ *$//' | awk 'NF { print }'
+            else
+                awk "
+                    /^${field}:/ { in_array=1; next }
+                    /^[a-z_]+:\$/ { in_array=0 }
+                    in_array && /^  - / { print substr(\$0, 5) }
+                " "$task_file"
+            fi
+            ;;
+    esac
 }
 
 parse_files() {
@@ -51,13 +65,20 @@ parse_files() {
         return 1
     fi
     
-    awk '
-        /^spec:/ { in_spec=1 }
-        /^  files:/ && in_spec { in_files=1; next }
-        in_files && /^    - / { print substr($0, 7) }
-        in_files && /^  [a-z]/ { in_files=0 }
-        /^[a-z_]+:$/ && !/^spec:/ { in_spec=0 }
-    ' "$task_file"
+    case "$task_file" in
+        *.json)
+            json_get_array "$task_file" "spec.files"
+            ;;
+        *.yaml)
+            awk '
+                /^spec:/ { in_spec=1 }
+                /^  files:/ && in_spec { in_files=1; next }
+                in_files && /^    - / { print substr($0, 7) }
+                in_files && /^  [a-z]/ { in_files=0 }
+                /^[a-z_]+:$/ && !/^spec:/ { in_spec=0 }
+            ' "$task_file"
+            ;;
+    esac
 }
 
 parse_acceptance_criteria() {
@@ -68,11 +89,18 @@ parse_acceptance_criteria() {
         return 1
     fi
     
-    awk '
-        /^acceptance_criteria:/ { in_ac=1; next }
-        /^[a-z_]+:$/ { in_ac=0 }
-        in_ac && /^  - / { print substr($0, 5) }
-    ' "$task_file"
+    case "$task_file" in
+        *.json)
+            json_get_array "$task_file" "acceptance_criteria"
+            ;;
+        *.yaml)
+            awk '
+                /^acceptance_criteria:/ { in_ac=1; next }
+                /^[a-z_]+:$/ { in_ac=0 }
+                in_ac && /^  - / { print substr($0, 5) }
+            ' "$task_file"
+            ;;
+    esac
 }
 
 parse_validation_commands() {
@@ -83,13 +111,20 @@ parse_validation_commands() {
         return 1
     fi
     
-    awk '
-        /^validation:/ { in_val=1; next }
-        /^[a-z_]+:$/ { in_val=0 }
-        /^  commands:/ && in_val { in_cmds=1; next }
-        in_cmds && /^    - / { print substr($0, 7) }
-        in_cmds && /^  [a-z]/ && !/^  commands:/ { in_cmds=0 }
-    ' "$task_file"
+    case "$task_file" in
+        *.json)
+            json_get_array "$task_file" "validation.commands"
+            ;;
+        *.yaml)
+            awk '
+                /^validation:/ { in_val=1; next }
+                /^[a-z_]+:$/ { in_val=0 }
+                /^  commands:/ && in_val { in_cmds=1; next }
+                in_cmds && /^    - / { print substr($0, 7) }
+                in_cmds && /^  [a-z]/ && !/^  commands:/ { in_cmds=0 }
+            ' "$task_file"
+            ;;
+    esac
 }
 
 parse_implementation_steps() {
@@ -100,12 +135,29 @@ parse_implementation_steps() {
         return 1
     fi
     
-    awk '
-        /^implementation:/ { in_impl=1; next }
-        /^[a-z_]+:$/ { in_impl=0 }
-        in_impl && /^  steps:/ { in_steps=1; next }
-        in_steps && /^    - step: / { print substr($0, 12) }
-    ' "$task_file"
+    case "$task_file" in
+        *.json)
+            python3 -c "
+import json
+with open('$task_file', 'r') as f:
+    data = json.load(f)
+steps = data.get('implementation', {}).get('steps', [])
+for step in steps:
+    if isinstance(step, dict):
+        print(step.get('step', ''))
+    else:
+        print(step)
+                    "
+            ;;
+        *.yaml)
+            awk '
+                /^implementation:/ { in_impl=1; next }
+                /^[a-z_]+:$/ { in_impl=0 }
+                in_impl && /^  steps:/ { in_steps=1; next }
+                in_steps && /^    - step: / { print substr($0, 12) }
+            ' "$task_file"
+            ;;
+    esac
 }
 
 parse_docs_to_read() {
@@ -116,11 +168,18 @@ parse_docs_to_read() {
         return 1
     fi
     
-    awk '
-        /^docs_to_read:/ { in_docs=1; next }
-        /^[a-z_]+:$/ { in_docs=0 }
-        in_docs && /^  - / { print substr($0, 5) }
-    ' "$task_file"
+    case "$task_file" in
+        *.json)
+            json_get_array "$task_file" "docs_to_read"
+            ;;
+        *.yaml)
+            awk '
+                /^docs_to_read:/ { in_docs=1; next }
+                /^[a-z_]+:$/ { in_docs=0 }
+                in_docs && /^  - / { print substr($0, 5) }
+            ' "$task_file"
+            ;;
+    esac
 }
 
 print_task_summary() {

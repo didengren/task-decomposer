@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Task File Schema",
+  "description": "Task file format for task-decomposer skill",
+  "type": "object",
+  "required": ["id", "type", "title", "priority", "phase", "status", "spec"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^PHASE-[0-9]+-[0-9]+-[0-9]+$",
+      "description": "Task ID in format PHASE-{phase}-{subphase}-{sequence}"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["feat", "fix", "refactor", "test", "docs"],
+      "description": "Task type"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Task title"
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["high", "medium", "low"],
+      "description": "Task priority"
+    },
+    "phase": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Phase number"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^PHASE-[0-9]+-[0-9]+-[0-9]+$"
+      },
+      "default": [],
+      "description": "List of task IDs this task depends on"
+    },
+    "docs_to_read": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["docs/plans/spec.md", "docs/plans/tasks.md"],
+      "description": "Documents AI must read before implementing"
+    },
+    "spec": {
+      "type": "object",
+      "required": ["description", "files"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Detailed task description"
+        },
+        "files": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "Files related to this task"
+        },
+        "context": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Context documents"
+        }
+      },
+      "additionalProperties": true
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Acceptance criteria for task completion"
+    },
+    "implementation": {
+      "type": "object",
+      "properties": {
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["step"],
+            "properties": {
+              "step": { "type": "string" },
+              "details": { "type": "string" }
+            },
+            "additionalProperties": false
+          },
+          "default": []
+        },
+        "notes": {
+          "type": "string",
+          "default": ""
+        }
+      },
+      "additionalProperties": true
+    },
+    "validation": {
+      "type": "object",
+      "properties": {
+        "commands": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Commands to validate task completion"
+        },
+        "manual_checks": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Manual checks for task completion"
+        }
+      },
+      "additionalProperties": true
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "in_progress", "completed", "blocked"],
+      "default": "pending",
+      "description": "Task status"
+    }
+  },
+  "additionalProperties": true
+}
