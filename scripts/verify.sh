@@ -221,7 +221,7 @@ run_install_checks() {
     example_project="${TMP_DIR}/${label}-example-project"
     installed_skill_dir="${test_home}/.skills/task-decomposer"
 
-    mkdir -p "${test_home}"
+    mkdir -p "${test_home}/.local/bin"
     create_custom_project "${custom_project}"
 
     HOME="${test_home}" "${skill_root}/scripts/install.sh" install generic >/dev/null
