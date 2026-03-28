@@ -1,6 +1,6 @@
 {
   "name": "@bicorne/task-decomposer",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "AI skill package for task decomposition and workflow orchestration, distributed via npm with the task CLI.",
   "repository": {
     "type": "git",
